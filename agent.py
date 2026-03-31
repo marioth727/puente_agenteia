@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 
 from livekit import rtc
 from livekit.agents import (
-    AutoSubscription,
+    AutoSubscribe,
     JobContext,
     WorkerOptions,
     cli,
@@ -156,7 +156,7 @@ async def entrypoint(ctx: JobContext):
     Los datos del cliente vienen en los metadatos de la Room de LiveKit.
     """
     # 1. Conectar al Room de LiveKit (solo audio)
-    await ctx.connect(auto_subscribe=AutoSubscription.AUDIO_ONLY)
+    await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
     logger.info("[SESSION] Conectado al room: %s", ctx.room.name)
 
     # 2. Obtener datos del cliente desde los metadatos del Room
