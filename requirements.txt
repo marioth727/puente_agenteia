@@ -1,0 +1,8 @@
+# Agente de Voz Sofía — Gemini Live + LiveKit
+# Instalar con: pip install -r requirements.txt
+
+livekit-agents[google]>=1.4
+livekit-server-sdk>=0.7
+google-genai>=1.0
+python-dotenv>=1.0
+httpx>=0.27
