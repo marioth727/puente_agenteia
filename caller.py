@@ -118,6 +118,9 @@ def main():
 
     try:
         client_meta = json.loads(args.meta)
+        # Si el input vino como string doblemente escapado (común en Docker/Dokploy), re-parsear
+        if isinstance(client_meta, str):
+            client_meta = json.loads(client_meta)
     except json.JSONDecodeError as e:
         logger.error("[ERROR] --meta no es JSON válido: %s", e)
         raise SystemExit(1)
