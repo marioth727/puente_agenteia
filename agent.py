@@ -13,6 +13,9 @@ import asyncio
 import json
 import logging
 import os
+
+print(">>> [BOOT] CARGANDO ARCHIVO AGENT.PY EN CONTENEDOR...", flush=True)
+
 from typing import Optional
 
 import httpx
