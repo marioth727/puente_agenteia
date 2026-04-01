@@ -293,7 +293,8 @@ async def entrypoint(ctx: JobContext):
 
     agent = Agent(
         llm=model,
-        tools=[tools_instance]
+        tools=[tools_instance],
+        instructions=system_prompt,
     )
 
 
