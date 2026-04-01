@@ -268,7 +268,7 @@ async def entrypoint(ctx: JobContext):
 
     model = google.realtime.RealtimeModel(
         model="gemini-3.1-flash-live-preview",
-        voice="Aoede",          # Voz disponible en Gemini Live (inglés base, aceptable para español)
+        voice="Aoede",          # Gemini Live Voice (Flash Live)
         temperature=0.7,
         instructions=system_prompt,
     )
@@ -295,11 +295,16 @@ async def entrypoint(ctx: JobContext):
 # Main
 # ─────────────────────────────────────────────
 
+async def prewarm_process(proc: rtc.ProcessContext):
+    """Verifica la conexión y configuración antes de aceptar llamadas."""
+    logger.info("⚡ [BOOT] Agente de Voz Sofía INICIADO")
+    logger.info("⚡ [BOOT] Esperando llamadas SIP de LiveKit...")
+
+
 if __name__ == "__main__":
     cli.run_app(
         WorkerOptions(
             entrypoint_fnc=entrypoint,
-            # Máximo de sesiones simultáneas (ajustar en producción)
-            # Para empezar: 2 llamadas simultáneas
+            prewarm_fnc=prewarm_process,
         )
     )
