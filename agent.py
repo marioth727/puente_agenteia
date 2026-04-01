@@ -125,11 +125,12 @@ Solo tras el segundo SÍ: llama la función confirmar_upgrade.
 - Acepta (doble SÍ) → llama confirmar_upgrade(plan_elegido, precio_elegido, fecha)
 """
 
-async def heartbeat():
+async def heartbeat_task():
     """Imprime un log cada 30 segundos para confirmar que el Agente está vivo en Dokploy."""
     while True:
         await asyncio.sleep(30)
         logger.info("💓 [HEARTBEAT] Agente Sofía esperando llamadas en LiveKit...")
+
 
 async def request_fnc(req: JobRequest):
     """Manejador de peticiones: Acepta las llamadas que llegan al servidor."""
@@ -310,10 +311,20 @@ async def entrypoint(ctx: JobContext):
 # Main
 # ─────────────────────────────────────────────
 
-async def prewarm_process(proc):
+def prewarm_process(proc):
     """Verifica la conexión y configuración antes de aceptar llamadas."""
     logger.info("⚡ [BOOT] Agente de Voz Sofía INICIADO (Modo: %s)", "models/gemini-3.1-flash-live-preview")
-    asyncio.create_task(heartbeat())
+    # Inicia la corrutina del corazón en el loop actual
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            loop.create_task(heartbeat_task())
+        else:
+            # Si el loop no está corriendo aún, usamos este método menos robusto pero funcional en el arranque
+            asyncio.run_coroutine_threadsafe(heartbeat_task(), loop)
+    except Exception:
+        # Silenciar si no hay loop, pero el worker debería tenerlo
+        pass
     logger.info("⚡ [BOOT] Esperando llamadas SIP de LiveKit...")
 
 
