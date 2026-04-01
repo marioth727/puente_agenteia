@@ -28,8 +28,8 @@ from livekit.agents import (
     JobRequest,
     WorkerOptions,
     cli,
-    multimodal,
 )
+from livekit.agents.multimodal import MultimodalAgent
 from livekit.agents.llm import function_tool
 from livekit.plugins import google
 
@@ -216,7 +216,7 @@ async def entrypoint(ctx: JobContext):
     system_prompt = build_system_prompt(client_data)
 
     # ── Inicializar el modelo Gemini Live ────────────────────────────────────
-    # Con livekit-plugins-google v1.6+, el modelo reside en el submodulo beta
+    # v1.5.1 usa google.beta para Gemini Live
     model = google.beta.RealtimeModel(
         voice="Aoede",          # Gemini Live Voice (Flash Live)
         temperature=0.7,
@@ -225,7 +225,7 @@ async def entrypoint(ctx: JobContext):
 
     # ── Crear la sesión del agente ────────────────────────────────────────────
 
-    agent = multimodal.MultimodalAgent(
+    agent = MultimodalAgent(
         model=model,
         fnc_ctx=google.FunctionContext()
     )
