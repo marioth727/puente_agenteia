@@ -113,11 +113,11 @@ def main():
     parser = argparse.ArgumentParser(description="Caller de llamadas salientes Sofía")
     parser.add_argument("--phone",  required=True, help="Número destino en formato E.164 (+573001234567)")
     parser.add_argument("--room",   required=True, help="Nombre único del Room (ej: upgrade-abc123)")
-    parser.add_argument("--meta",   required=True, help="JSON con datos del cliente")
+    parser.add_argument("--meta",   nargs='+', required=True, help="JSON con datos del cliente")
     args = parser.parse_args()
 
-    # LIMPIEZA AGRESIVA DE WINDOWS / SHELL
-    meta_str = args.meta.strip().replace('\\"', '"') # Limpia escapes raros de PowerShell
+    # RECOMPONER META SI SE DIVIDIÓ POR ESPACIOS (Shell Splitting Fix)
+    meta_str = " ".join(args.meta).strip().replace('\\"', '"') 
     if meta_str.startswith("'") and meta_str.endswith("'"):
         meta_str = meta_str[1:-1] # Limpia comillas simples exteriores
 
