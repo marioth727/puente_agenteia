@@ -26,6 +26,7 @@ from livekit.agents import (
     AutoSubscribe,
     JobContext,
     JobRequest,
+    ProcessContext,
     WorkerOptions,
     cli,
 )
