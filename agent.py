@@ -29,6 +29,8 @@ from livekit.agents import (
     WorkerOptions,
     cli,
     Agent,
+    AgentSession,
+    room_io,
 )
 from livekit.agents.llm import function_tool
 from livekit.plugins.google.realtime import RealtimeModel
@@ -134,10 +136,6 @@ async def heartbeat_task():
         logger.info("💓 [HEARTBEAT] Agente Sofía esperando llamadas en LiveKit...")
 
 
-async def request_fnc(req: JobRequest):
-    """Manejador de peticiones: Acepta las llamadas que llegan al servidor."""
-    logger.info("⚡ [JOB] Recibida petición para el room: %s", req.room.name)
-    await req.accept(name="Sofia-Agent")
 
 
 def build_system_prompt(client_meta: dict) -> str:
@@ -217,16 +215,14 @@ async def entrypoint(ctx: JobContext):
     system_prompt = build_system_prompt(client_data)
 
     # ── Inicializar el modelo Gemini Live ────────────────────────────────────
-    # v1.5.1 usa google.realtime para Gemini Live estable
-    model = RealtimeModel(
-        voice="Aoede",          # Gemini Live Voice (Flash Live)
+    model = google.realtime.RealtimeModel(
+        model="gemini-3.1-flash-live-preview",
+        voice="Aoede",
         temperature=0.7,
-        instructions=system_prompt,
     )
 
-    # ── Crear la sesión de tools y el agente ──────────────────────────────────
+    # ── Crear herramientas del agente ───────────────────────────────────────
     from typing import Annotated
-    from livekit.agents.llm import function_tool
 
     class SofiaTools:
         def __init__(self, id_cliente_wisphub: str, meta: dict):
@@ -250,7 +246,7 @@ async def entrypoint(ctx: JobContext):
             })
             return f"Upgrade confirmado. Respuesta n8n: {result.get('message', 'OK')}"
 
-        @function_tool(description="Llama cuando el cliente rechaza definitivamente u otra persona contestó.")
+        @function_tool(description="Llama cuando el cliente rechaza definitivamente u otra persona contesó.")
         async def registrar_rechazo(
             self,
             motivo: Annotated[str, "Razón del rechazo (ej: 'precio_alto', 'titular_no_presente', 'no_interesa')."]
@@ -290,19 +286,25 @@ async def entrypoint(ctx: JobContext):
             return f"Escalado a humano. Respuesta: {result.get('message', 'OK')}"
 
     tools_instance = SofiaTools(id_cliente, client_data)
+    tools = google.llm.find_function_tools(tools_instance)
 
+    # ── Crear agente y sesión ────────────────────────────────────────────────
     agent = Agent(
         llm=model,
-        tools=[tools_instance],
+        tools=tools,
         instructions=system_prompt,
     )
 
+    session = AgentSession(
+        llm=model,
+        tools=tools,
+    )
 
     logger.info("[SESSION] Agente Sofía iniciado para cliente %s (Cat. %s)",
                 client_data.get("nombre"), client_data.get("categoria"))
 
     # ── Iniciar sesión en el Room ─────────────────────────────────────────────
-    await agent.start(ctx.room)
+    await session.start(ctx.room, agent)
 
 
 # ─────────────────────────────────────────────
@@ -316,7 +318,6 @@ if __name__ == "__main__":
         cli.run_app(
             WorkerOptions(
                 entrypoint_fnc=entrypoint,
-                request_fnc=request_fnc,
             )
         )
     except Exception as e:
