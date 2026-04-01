@@ -224,22 +224,16 @@ async def entrypoint(ctx: JobContext):
         instructions=system_prompt,
     )
 
-    # ── Crear la sesión del agente ────────────────────────────────────────────
+    # ── Crear la sesión de tools y el agente ──────────────────────────────────
+    from livekit.agents import llm
+    fnc_ctx = llm.FunctionContext()
 
-    agent = Agent(
-        llm=model,
-        fnc_ctx=google.FunctionContext()
-    )
-
-    @agent.fnc_ctx.add_tool
-    async def confirmar_upgrade(plan_elegido: str, precio_elegido: str, fecha: str) -> str:
-        """
-        Llama cuando el cliente confirmó el upgrade con doble SÍ.
-        Args:
-            plan_elegido: Nombre del plan aceptado (HOGAR, FAMILIA, ULTRA, ELITE).
-            precio_elegido: Precio final acordado en pesos colombianos.
-            fecha: Fecha de activación del nuevo plan.
-        """
+    @fnc_ctx.ai_callable(description="Llama cuando el cliente confirmó el upgrade con doble SÍ.")
+    async def confirmar_upgrade(
+        plan_elegido: str = llm.ai_arg(description="Nombre del plan aceptado (HOGAR, FAMILIA, ULTRA, ELITE)"),
+        precio_elegido: str = llm.ai_arg(description="Precio final acordado en pesos colombianos."),
+        fecha: str = llm.ai_arg(description="Fecha de activación del nuevo plan.")
+    ) -> str:
         logger.info("[TOOL] confirmar_upgrade → plan=%s precio=%s fecha=%s", plan_elegido, precio_elegido, fecha)
         result = await call_n8n_webhook(N8N_CONFIRMAR, {
             "id_cliente_wisphub": id_cliente,
@@ -250,13 +244,10 @@ async def entrypoint(ctx: JobContext):
         })
         return f"Upgrade confirmado. Respuesta n8n: {result.get('message', 'OK')}"
 
-    @agent.fnc_ctx.add_tool
-    async def registrar_rechazo(motivo: str) -> str:
-        """
-        Llama cuando el cliente rechaza definitivamente o cuando el titular no está presente.
-        Args:
-            motivo: Razón del rechazo (ej: 'precio_alto', 'titular_no_presente', 'no_interesa').
-        """
+    @fnc_ctx.ai_callable(description="Llama cuando el cliente rechaza definitivamente o cuando el titular no está presente.")
+    async def registrar_rechazo(
+        motivo: str = llm.ai_arg(description="Razón del rechazo (ej: 'precio_alto', 'titular_no_presente', 'no_interesa').")
+    ) -> str:
         logger.info("[TOOL] registrar_rechazo → motivo=%s", motivo)
         result = await call_n8n_webhook(N8N_RECHAZO, {
             "id_cliente_wisphub": id_cliente,
@@ -265,13 +256,10 @@ async def entrypoint(ctx: JobContext):
         })
         return f"Rechazo registrado. Respuesta: {result.get('message', 'OK')}"
 
-    @agent.fnc_ctx.add_tool
-    async def programar_reintento(fecha_hora: str) -> str:
-        """
-        Llama cuando el cliente pide que lo llamen en otro momento.
-        Args:
-            fecha_hora: Fecha y hora preferida para el reintento (formato: YYYY-MM-DD HH:MM).
-        """
+    @fnc_ctx.ai_callable(description="Llama cuando el cliente pide que lo llamen en otro momento.")
+    async def programar_reintento(
+        fecha_hora: str = llm.ai_arg(description="Fecha y hora preferida para el reintento (formato: YYYY-MM-DD HH:MM).")
+    ) -> str:
         logger.info("[TOOL] programar_reintento → fecha_hora=%s", fecha_hora)
         result = await call_n8n_webhook(N8N_REINTENTO, {
             "id_cliente_wisphub": id_cliente,
@@ -280,13 +268,10 @@ async def entrypoint(ctx: JobContext):
         })
         return f"Reintento agendado. Respuesta: {result.get('message', 'OK')}"
 
-    @agent.fnc_ctx.add_tool
-    async def escalar_a_humano(motivo: str) -> str:
-        """
-        Llama cuando el cliente tiene una falla técnica urgente (sin internet hoy).
-        Args:
-            motivo: Tipo de escalamiento (ej: 'falla_tecnica', 'queja_grave').
-        """
+    @fnc_ctx.ai_callable(description="Llama cuando el cliente tiene una falla técnica urgente (sin internet hoy) o queja seria.")
+    async def escalar_a_humano(
+        motivo: str = llm.ai_arg(description="Tipo de escalamiento (ej: 'falla_tecnica', 'queja_grave').")
+    ) -> str:
         logger.info("[TOOL] escalar_a_humano → motivo=%s", motivo)
         result = await call_n8n_webhook(N8N_ESCALAR, {
             "id_cliente_wisphub": id_cliente,
@@ -294,6 +279,12 @@ async def entrypoint(ctx: JobContext):
             "nombre": client_data.get("nombre"),
         })
         return f"Escalado a humano. Respuesta: {result.get('message', 'OK')}"
+
+    agent = Agent(
+        llm=model,
+        fnc_ctx=fnc_ctx
+    )
+
 
     logger.info("[SESSION] Agente Sofía iniciado para cliente %s (Cat. %s)",
                 client_data.get("nombre"), client_data.get("categoria"))
