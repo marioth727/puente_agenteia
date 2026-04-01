@@ -286,18 +286,16 @@ async def entrypoint(ctx: JobContext):
             return f"Escalado a humano. Respuesta: {result.get('message', 'OK')}"
 
     tools_instance = SofiaTools(id_cliente, client_data)
-    tools = google.llm.find_function_tools(tools_instance)
 
     # ── Crear agente y sesión ────────────────────────────────────────────────
     agent = Agent(
         llm=model,
-        tools=tools,
+        tools=[tools_instance],
         instructions=system_prompt,
     )
 
     session = AgentSession(
         llm=model,
-        tools=tools,
     )
 
     logger.info("[SESSION] Agente Sofía iniciado para cliente %s (Cat. %s)",
