@@ -302,7 +302,10 @@ async def entrypoint(ctx: JobContext):
                 client_data.get("nombre"), client_data.get("categoria"))
 
     # ── Iniciar sesión en el Room ─────────────────────────────────────────────
-    await session.start(ctx.room, agent)
+    await session.start(
+        room=ctx.room,
+        agent=agent,
+    )
 
 
 # ─────────────────────────────────────────────
