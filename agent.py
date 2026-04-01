@@ -319,10 +319,19 @@ async def prewarm_process(proc: rtc.ProcessContext):
 
 
 if __name__ == "__main__":
-    cli.run_app(
-        WorkerOptions(
-            entrypoint_fnc=entrypoint,
-            prewarm_fnc=prewarm_process,
-            request_fnc=request_fnc,
+    import traceback
+    try:
+        logger.info("🚀 [MAIN] Iniciando cli.run_app...")
+        cli.run_app(
+            WorkerOptions(
+                entrypoint_fnc=entrypoint,
+                prewarm_fnc=prewarm_process,
+                request_fnc=request_fnc,
+            )
         )
-    )
+    except Exception as e:
+        logger.error("❌ [FATAL] Error crítico en el Worker de Sofía:")
+        logger.error(traceback.format_exc())
+        # No dejar que el contenedor muera en silencio
+        import time
+        time.sleep(3600)
