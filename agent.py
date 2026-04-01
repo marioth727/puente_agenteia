@@ -25,6 +25,7 @@ from livekit import rtc
 from livekit.agents import (
     AutoSubscribe,
     JobContext,
+    JobRequest,
     WorkerOptions,
     cli,
 )
@@ -123,6 +124,17 @@ Solo tras el segundo SÍ: llama la función confirmar_upgrade.
 - Rechaza tras ronda 4 → llama registrar_rechazo(motivo)
 - Acepta (doble SÍ) → llama confirmar_upgrade(plan_elegido, precio_elegido, fecha)
 """
+
+async def heartbeat():
+    """Imprime un log cada 30 segundos para confirmar que el Agente está vivo en Dokploy."""
+    while True:
+        await asyncio.sleep(30)
+        logger.info("💓 [HEARTBEAT] Agente Sofía esperando llamadas en LiveKit...")
+
+async def request_fnc(req: JobRequest):
+    """Manejador de peticiones: Acepta las llamadas que llegan al servidor."""
+    logger.info("⚡ [JOB] Recibida petición para el room: %s", req.room.name)
+    await req.accept(name="Sofia-Agent")
 
 
 def build_system_prompt(client_meta: dict) -> str:
@@ -300,7 +312,8 @@ async def entrypoint(ctx: JobContext):
 
 async def prewarm_process(proc: rtc.ProcessContext):
     """Verifica la conexión y configuración antes de aceptar llamadas."""
-    logger.info("⚡ [BOOT] Agente de Voz Sofía INICIADO")
+    logger.info("⚡ [BOOT] Agente de Voz Sofía INICIADO (Modo: %s)", "models/gemini-3.1-flash-live-preview")
+    asyncio.create_task(heartbeat())
     logger.info("⚡ [BOOT] Esperando llamadas SIP de LiveKit...")
 
 
@@ -309,5 +322,6 @@ if __name__ == "__main__":
         WorkerOptions(
             entrypoint_fnc=entrypoint,
             prewarm_fnc=prewarm_process,
+            request_fnc=request_fnc,
         )
     )
