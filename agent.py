@@ -221,6 +221,9 @@ async def entrypoint(ctx: JobContext):
     model = RealtimeModel(
         voice="Aoede",          # Gemini Live Voice (Flash Live)
         temperature=0.7,
+        instructions=system_prompt,
+    )
+
     # ── Crear la sesión de tools y el agente ──────────────────────────────────
     from typing import Annotated
     from livekit.agents.llm import function_tool
