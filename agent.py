@@ -28,8 +28,8 @@ from livekit.agents import (
     JobRequest,
     WorkerOptions,
     cli,
+    Agent,
 )
-from livekit.agents.multimodal import MultimodalAgent
 from livekit.agents.llm import function_tool
 from livekit.plugins import google
 
@@ -225,8 +225,8 @@ async def entrypoint(ctx: JobContext):
 
     # ── Crear la sesión del agente ────────────────────────────────────────────
 
-    agent = MultimodalAgent(
-        model=model,
+    agent = Agent(
+        llm=model,
         fnc_ctx=google.FunctionContext()
     )
 
