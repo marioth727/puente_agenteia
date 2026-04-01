@@ -120,6 +120,10 @@ def main():
     meta_str = " ".join(args.meta).strip().replace('\\"', '"') 
     if meta_str.startswith("'") and meta_str.endswith("'"):
         meta_str = meta_str[1:-1] # Limpia comillas simples exteriores
+    if meta_str.startswith('"') and meta_str.endswith('"'):
+        meta_str = meta_str[1:-1] # Limpia comillas dobles exteriores (Dokploy Fix)
+    
+    meta_str = meta_str.strip()
 
     try:
         # Intentamos parsear como JSON real
