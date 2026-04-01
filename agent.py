@@ -31,6 +31,7 @@ from livekit.agents import (
     Agent,
 )
 from livekit.agents.llm import function_tool
+from livekit.plugins.google.realtime import RealtimeModel
 from livekit.plugins import google
 
 # ─────────────────────────────────────────────
@@ -216,8 +217,8 @@ async def entrypoint(ctx: JobContext):
     system_prompt = build_system_prompt(client_data)
 
     # ── Inicializar el modelo Gemini Live ────────────────────────────────────
-    # v1.5.1 usa google.beta para Gemini Live
-    model = google.beta.RealtimeModel(
+    # v1.5.1 usa google.realtime para Gemini Live estable
+    model = RealtimeModel(
         voice="Aoede",          # Gemini Live Voice (Flash Live)
         temperature=0.7,
         instructions=system_prompt,
