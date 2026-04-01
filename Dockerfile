@@ -19,5 +19,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar el resto del código
 COPY . .
 
-# Comando por defecto para iniciar el agente
-CMD ["python", "agent.py", "start"]
+# Comando por defecto para iniciar el agente (con echo de diagnóstico)
+CMD ["/bin/sh", "-c", "echo '>>> [DOCKER] INICIANDO AGENTE SOFIA...' && python -u agent.py start"]
