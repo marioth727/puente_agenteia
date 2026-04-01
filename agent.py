@@ -216,8 +216,8 @@ async def entrypoint(ctx: JobContext):
     system_prompt = build_system_prompt(client_data)
 
     # ── Inicializar el modelo Gemini Live ────────────────────────────────────
-
-    model = google.RealtimeModel(
+    # Con livekit-plugins-google v1.6+, el modelo reside en el submodulo beta
+    model = google.beta.RealtimeModel(
         voice="Aoede",          # Gemini Live Voice (Flash Live)
         temperature=0.7,
         instructions=system_prompt,
