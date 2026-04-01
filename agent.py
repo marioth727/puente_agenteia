@@ -302,6 +302,11 @@ async def entrypoint(ctx: JobContext):
         agent=agent,
     )
 
+    # ── Generar respuesta inicial para que el agente hable ───────────────────
+    await session.generate_reply(
+        instructions=f"Saluda al cliente {client_data.get('nombre')} y presenta la oferta de upgrade.",
+    )
+
 
 # ─────────────────────────────────────────────
 # Main
