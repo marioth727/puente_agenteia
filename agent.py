@@ -26,7 +26,6 @@ from livekit.agents import (
     AutoSubscribe,
     JobContext,
     JobRequest,
-    ProcessContext,
     WorkerOptions,
     cli,
 )
@@ -311,7 +310,7 @@ async def entrypoint(ctx: JobContext):
 # Main
 # ─────────────────────────────────────────────
 
-async def prewarm_process(proc: rtc.ProcessContext):
+async def prewarm_process(proc):
     """Verifica la conexión y configuración antes de aceptar llamadas."""
     logger.info("⚡ [BOOT] Agente de Voz Sofía INICIADO (Modo: %s)", "models/gemini-3.1-flash-live-preview")
     asyncio.create_task(heartbeat())
