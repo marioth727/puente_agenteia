@@ -116,18 +116,29 @@ def main():
     parser.add_argument("--meta",   required=True, help="JSON con datos del cliente")
     args = parser.parse_args()
 
+    # LIMPIEZA AGRESIVA DE WINDOWS / SHELL
+    meta_str = args.meta.strip().replace('\\"', '"') # Limpia escapes raros de PowerShell
+    if meta_str.startswith("'") and meta_str.endswith("'"):
+        meta_str = meta_str[1:-1] # Limpia comillas simples exteriores
+
     try:
-        client_meta = json.loads(args.meta)
-        # Si el input vino como string doblemente escapado (común en Docker/Dokploy), re-parsear
+        # Intentamos parsear como JSON real
+        client_meta = json.loads(meta_str)
+        # Si el input vino como string doblemente escapado, re-parsear
         if isinstance(client_meta, str):
             client_meta = json.loads(client_meta)
-    except json.JSONDecodeError as e:
-        logger.error("[ERROR] --meta no es JSON válido: %s", e)
-        raise SystemExit(1)
+    except Exception:
+        # PLAN B: Si no es JSON (ej: --meta "test"), el valor se usa como el nombre del cliente
+        client_meta = {"nombre": meta_str}
+        logger.warning("[WARNING] No se pudo parsear JSON en --meta, usando como nombre simple: %s", meta_str)
+
+    # Limpiamos comillas inyectadas en los strings básicos
+    clean_phone = args.phone.strip().replace('"', '').replace("'", "")
+    clean_room = args.room.strip().replace('"', '').replace("'", "")
 
     result = asyncio.run(dial_client(
-        phone=args.phone,
-        room_name=args.room,
+        phone=clean_phone,
+        room_name=clean_room,
         client_meta=client_meta,
     ))
 

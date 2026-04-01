@@ -122,9 +122,28 @@ Solo tras el segundo SÍ: llama la función confirmar_upgrade.
 """
 
 
-def build_system_prompt(client_data: dict) -> str:
-    """Inyecta los datos del cliente en el prompt base."""
-    return BASE_SYSTEM_PROMPT.format(**client_data)
+def build_system_prompt(client_meta: dict) -> str:
+    """Inyecta los datos del cliente con valores por defecto para evitar KeyError."""
+    defaults = {
+        "nombre": "cliente", 
+        "velocidad_actual": "X", 
+        "precio_actual_txt": "la tarifa actual",
+        "categoria": "A", 
+        "plan_upsell": "Superior", 
+        "velocidad_upsell_txt": "más velocidad",
+        "precio_upsell_txt": "$0", 
+        "plan_downsell": "Básico", 
+        "velocidad_downsell_txt": "velocidad ajustada",
+        "precio_downsell_txt": "$0", 
+        "diario_upsell_txt": "un pequeño monto",
+        "diario_downsell_txt": "un pequeño monto", 
+        "veces_upsell_txt": "al doble",
+        "fecha_activacion": "mañana", 
+        "id_cliente_wisphub": "0"
+    }
+    # Combinar valores reales con defaults
+    full_data = {**defaults, **client_meta}
+    return BASE_SYSTEM_PROMPT.format(**full_data)
 
 
 # ─────────────────────────────────────────────
