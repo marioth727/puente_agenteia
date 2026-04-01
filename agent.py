@@ -28,6 +28,7 @@ from livekit.agents import (
     JobRequest,
     WorkerOptions,
     cli,
+    multimodal,
 )
 from livekit.agents.llm import function_tool
 from livekit.plugins import google
@@ -214,9 +215,22 @@ async def entrypoint(ctx: JobContext):
     # 3. Construir el system prompt con las variables del cliente
     system_prompt = build_system_prompt(client_data)
 
-    # ── Definir las Tools que Gemini puede invocar ──────────────────────────
+    # ── Inicializar el modelo Gemini Live ────────────────────────────────────
 
-    @function_tool
+    model = google.RealtimeModel(
+        voice="Aoede",          # Gemini Live Voice (Flash Live)
+        temperature=0.7,
+        instructions=system_prompt,
+    )
+
+    # ── Crear la sesión del agente ────────────────────────────────────────────
+
+    agent = multimodal.MultimodalAgent(
+        model=model,
+        fnc_ctx=google.FunctionContext()
+    )
+
+    @agent.fnc_ctx.add_tool
     async def confirmar_upgrade(plan_elegido: str, precio_elegido: str, fecha: str) -> str:
         """
         Llama cuando el cliente confirmó el upgrade con doble SÍ.
@@ -235,7 +249,7 @@ async def entrypoint(ctx: JobContext):
         })
         return f"Upgrade confirmado. Respuesta n8n: {result.get('message', 'OK')}"
 
-    @function_tool
+    @agent.fnc_ctx.add_tool
     async def registrar_rechazo(motivo: str) -> str:
         """
         Llama cuando el cliente rechaza definitivamente o cuando el titular no está presente.
@@ -250,7 +264,7 @@ async def entrypoint(ctx: JobContext):
         })
         return f"Rechazo registrado. Respuesta: {result.get('message', 'OK')}"
 
-    @function_tool
+    @agent.fnc_ctx.add_tool
     async def programar_reintento(fecha_hora: str) -> str:
         """
         Llama cuando el cliente pide que lo llamen en otro momento.
@@ -265,7 +279,7 @@ async def entrypoint(ctx: JobContext):
         })
         return f"Reintento agendado. Respuesta: {result.get('message', 'OK')}"
 
-    @function_tool
+    @agent.fnc_ctx.add_tool
     async def escalar_a_humano(motivo: str) -> str:
         """
         Llama cuando el cliente tiene una falla técnica urgente (sin internet hoy).
@@ -280,53 +294,16 @@ async def entrypoint(ctx: JobContext):
         })
         return f"Escalado a humano. Respuesta: {result.get('message', 'OK')}"
 
-    # ── Inicializar el modelo Gemini Live ────────────────────────────────────
-
-    model = google.realtime.RealtimeModel(
-        model="gemini-3.1-flash-live-preview",
-        voice="Aoede",          # Gemini Live Voice (Flash Live)
-        temperature=0.7,
-        instructions=system_prompt,
-    )
-
-    # ── Crear la sesión del agente ────────────────────────────────────────────
-
-    agent = google.realtime.RealtimeAgent(
-        model=model,
-        tools=[confirmar_upgrade, registrar_rechazo, programar_reintento, escalar_a_humano],
-    )
-
     logger.info("[SESSION] Agente Sofía iniciado para cliente %s (Cat. %s)",
                 client_data.get("nombre"), client_data.get("categoria"))
 
     # ── Iniciar sesión en el Room ─────────────────────────────────────────────
     await agent.start(ctx.room)
 
-    # Sofía inicia la conversación con el pitch según la categoría
-    # El saludo inicial se hace desde el system prompt, Gemini lo activará automáticamente
-    # al detectar que el participante (cliente SIP) entró al room.
-
 
 # ─────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────
-
-def prewarm_process(proc):
-    """Verifica la conexión y configuración antes de aceptar llamadas."""
-    logger.info("⚡ [BOOT] Agente de Voz Sofía INICIADO (Modo: %s)", "models/gemini-3.1-flash-live-preview")
-    # Inicia la corrutina del corazón en el loop actual
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            loop.create_task(heartbeat_task())
-        else:
-            # Si el loop no está corriendo aún, usamos este método menos robusto pero funcional en el arranque
-            asyncio.run_coroutine_threadsafe(heartbeat_task(), loop)
-    except Exception:
-        # Silenciar si no hay loop, pero el worker debería tenerlo
-        pass
-    logger.info("⚡ [BOOT] Esperando llamadas SIP de LiveKit...")
-
 
 if __name__ == "__main__":
     import traceback
@@ -335,7 +312,6 @@ if __name__ == "__main__":
         cli.run_app(
             WorkerOptions(
                 entrypoint_fnc=entrypoint,
-                prewarm_fnc=prewarm_process,
                 request_fnc=request_fnc,
             )
         )
